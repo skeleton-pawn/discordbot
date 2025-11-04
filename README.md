@@ -1,0 +1,7 @@
+discordbot
+
+-BTC
+-XRP
+-ETH
+
+
