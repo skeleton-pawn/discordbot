@@ -71,7 +71,6 @@ async def crypto_price(ctx, coin_symbol: str = 'btc'):
 
     data = get_crypto_price(coin['id'])
     if data:
-
         usd = data.get('usd', 0)
         krw = data.get('krw', 0)
         
@@ -221,28 +220,10 @@ async def uptime(ctx):
     except Exception as e:
         await ctx.send(f"업타임 정보를 가져오는 중 오류가 발생했습니다: {e}")
 
-<<<<<<< HEAD
-=======
-@bot.command(name='info1')
-async def system_info(ctx):
-    """전체 시스템 정보 조회"""
-    cpu_percent = psutil.cpu_percent(interval=1)
-    ram = psutil.virtual_memory()
-    disk = psutil.disk_usage('/')
-    
-    embed = discord.Embed(title="🖥️ 시스템 정보", description="서버의 전체 상태", color=0x2ecc71)
-    embed.add_field(name="CPU", value=f"{cpu_percent}%", inline=True)
-    embed.add_field(name="RAM", value=f"{ram.percent}%", inline=True)
-    embed.add_field(name="Disk", value=f"{disk.percent}%", inline=True)
-    
-    await ctx.send(embed=embed)
-
 # 서버 재부팅 명령어 (관리자 전용)
 @bot.command(name='qreboot')
 @commands.is_owner() # 봇 소유자만 실행 가능하도록 변경 
 async def qreboot(ctx):
-
-        embed = discord.Embed(
 
         title="⚠️ 서버 재부팅",
         description=f"5초 후 서버를 재부팅합니다.\n실행자: {ctx.author.mention}",
@@ -289,8 +270,8 @@ async def show_commands(ctx):
         value=(
             "`!p btc` — 비트코인 가격 조회\n"
             "`!p xrp` — 리플 가격 조회\n"
-            "`!p eth — 이더리움 가격 조회\n"
-            "`(중지)!doge` — 도지코인 가격 조회"
+            "`!p eth` — 이더리움 가격 조회\n"
+            "`!p doge` — 도지코인 가격 조회"
         ),
         inline=False
     )
@@ -310,7 +291,7 @@ async def show_commands(ctx):
         inline=False
     )
 
-    embed.set_footer(text="Designed by TK_Dominance😎System Bot v0.2")
+    embed.set_footer(text="Designed by TK_Dominance😎System Bot v0.3")
 
     await ctx.send(embed=embed)
 
@@ -322,7 +303,5 @@ async def on_command_error(ctx, error):
     else:
         raise error
 
-
 bot.run(os.getenv("DISCORD_TOKEN"))
-
 
