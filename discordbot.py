@@ -271,7 +271,7 @@ async def show_commands(ctx):
         inline=False
     )
 
-    embed.set_footer(text="Designed by TK_Dominance😎System Bot v0.2")
+    embed.set_footer(text="Designed by TK_Dominance😎System Bot v0.3")
 
     await ctx.send(embed=embed)
 
