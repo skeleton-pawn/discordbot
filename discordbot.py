@@ -1,34 +1,26 @@
 import discord
 from discord.ext import commands
 import requests
-import os
 import psutil
+import subprocess
+import asyncio
+import os
 from dotenv import load_dotenv
 load_dotenv()
 
 import requests
 
-def get_coin_price(coin_id: str) -> str:
-    url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd"
-    try:
-        response = requests.get(url, timeout=10).json()
-        if coin_id in response and "usd" in response[coin_id]:
-            price = response[coin_id]["usd"]
-            
-            # 소수점 자리수 조건부 적용
-            if coin_id in ["bitcoin", "ethereum"]:
-                return f"${int(price):,}"        # 정수만
-            else:
-                return f"${price:,.2f}"          # 소수점 2자리
-        else:
-            return None
-    except Exception:
-        return None
-
 # === 디스코드 봇 ===
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+# 관리자 ID (환경 변수에서 로드)
+try:
+    AUTHORIZED_USER_ID = int(os.getenv('AUTHORIZED_USER_ID'))
+except (TypeError, ValueError):
+    print("오류: AUTHORIZED_USER_ID가 .env 파일에 없거나 올바른 숫자가 아닙니다.")
+    exit()
 
 @bot.event
 async def on_ready():
@@ -71,42 +63,29 @@ async def crypto_price(ctx, coin_symbol: str = 'btc'):
 
     data = get_crypto_price(coin['id'])
     if data:
+
         usd = data.get('usd', 0)
         krw = data.get('krw', 0)
         
         usd_format = ",.4f" if symbol in ['xrp', 'doge'] else ",.2f"
         krw_format = ",.2f" if symbol in ['xrp', 'doge'] else ",.0f"
 
-        embed = discord.Embed(title=f"{coin['symbol']} {coin['name']} ({symbol.upper()})", color=coin['color'])
-        embed.add_field(name="USD", value=f"${usd:{usd_format}}", inline=True)
-        embed.add_field(name="KRW", value=f"₩{krw:{krw_format}}", inline=True)
-        await ctx.send(embed=embed)
+        # 1. 소수점 자릿수 설정
+        if symbol == 'xrp':
+            # 리플(xrp)일 경우, 소수점 첫째 자리까지 표시
+            price_format = ",.1f"
+        else:
+            # 나머지 코인은 소수점 없이 정수로 표시
+            price_format = ",.0f"
 
+        message = (
+            f"**{coin['symbol']} {coin['name']}({symbol.upper()})**\n"
+            f"USD: **${usd:{price_format}}** "
+            f"| KRW: ₩{krw:{price_format}}"
+        )
+        await ctx.send(message)
     else:
-        await ctx.send("비트코인 가격을 가져오는 중 오류가 발생했습니다.")
-
-@bot.command(name="xrp")
-async def xrp_price(ctx):
-    price = get_coin_price("ripple")
-    if price:
-        await ctx.send(f"현재 리플(XRP) 가격: **{price} USD**")
-    else:
-        await ctx.send("리플 가격을 가져오는 중 오류가 발생했습니다.")
-
-@bot.command(name="eth")
-async def eth_price(ctx):
-    price = get_coin_price("ethereum")
-    if price:
-        await ctx.send(f"현재 이더리움(ETH) 가격: **{price} USD**")
-    else:
-        await ctx.send("이더리움 가격을 가져오는 중 오류가 발생했습니다.")
-
-@bot.command(name="doge")
-async def doge_price(ctx):
-    price = get_coin_price("dogecoin")
-    if price:
-        await ctx.send(f"현재 도지코인(DOGE) 가격: **{price} USD**")
-        await ctx.send("도지코인 가격을 가져오는 중 오류가 발생했습니다.")
+        await ctx.send(f"❌ {coin['name']} 가격을 가져올 수 없습니다.")
 
 #system command
 @bot.command(name="sys")
@@ -224,14 +203,15 @@ async def uptime(ctx):
 @bot.command(name='qreboot')
 @commands.is_owner() # 봇 소유자만 실행 가능하도록 변경 
 async def qreboot(ctx):
-
+    # 경고 임베드 생성 및 전송
+    embed = discord.Embed(
         title="⚠️ 서버 재부팅",
         description=f"5초 후 서버를 재부팅합니다.\n실행자: {ctx.author.mention}",
         color=0xff0000
     )
     await ctx.send(embed=embed)
     await asyncio.sleep(5)
-    
+
     try:
         # sudoers 파일에 'username ALL=(ALL) NOPASSWD: /sbin/reboot' 와 같은 설정이 필요할 수 있습니다.
         result = subprocess.run(['sudo', 'reboot'], check=True, capture_output=True, text=True)
@@ -291,7 +271,7 @@ async def show_commands(ctx):
         inline=False
     )
 
-    embed.set_footer(text="Designed by TK_Dominance😎System Bot v0.3")
+    embed.set_footer(text="Designed by TK_Dominance😎System Bot v0.2")
 
     await ctx.send(embed=embed)
 
@@ -302,6 +282,6 @@ async def on_command_error(ctx, error):
         await ctx.send(f"❌ '{ctx.message.content}' 명령은 존재하지 않습니다.")
     else:
         raise error
-
+        
+# 봇 실행 명령
 bot.run(os.getenv("DISCORD_TOKEN"))
-
